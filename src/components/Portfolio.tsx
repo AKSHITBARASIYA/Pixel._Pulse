@@ -84,6 +84,7 @@ const Portfolio: React.FC = () => {
   const panelsRef = useRef<(HTMLDivElement | null)[]>([]);
   const progressFillRef = useRef<HTMLDivElement | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isHorizontal, setIsHorizontal] = useState(false);
 
   const labels = ["Brochure", "Holding", "Logo", "Packaging", "Visiting Cards"];
 
@@ -116,12 +117,22 @@ const Portfolio: React.FC = () => {
   };
 
   useEffect(() => {
-    setTimeout(() => {
-      gsap.to(window, { scrollTo: { y: containerRef.current?.offsetTop || 0 }, duration: 0 });
-    }, 50);
+    const mql = window.matchMedia('(min-width: 1024px)'); // lg and up
+    const update = () => setIsHorizontal(mql.matches);
+    update();
+    mql.addEventListener('change', update);
+    return () => mql.removeEventListener('change', update);
   }, []);
 
   useEffect(() => {
+    if (!isHorizontal) return;
+    setTimeout(() => {
+      gsap.to(window, { scrollTo: { y: containerRef.current?.offsetTop || 0 }, duration: 0 });
+    }, 50);
+  }, [isHorizontal]);
+
+  useEffect(() => {
+    if (!isHorizontal) return;
     if (!containerRef.current) return;
 
     const panels = panelsRef.current.filter(Boolean) as HTMLDivElement[];
@@ -160,7 +171,7 @@ const Portfolio: React.FC = () => {
     }, containerRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [isHorizontal]);
 
   // Compute right-side markers and baseline on mount and resize
   useEffect(() => {
@@ -193,53 +204,65 @@ const Portfolio: React.FC = () => {
 
   return (
     <section className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900">
-      <div ref={containerRef} className="relative h-screen w-screen overflow-hidden">
-        <div className="flex h-full" style={{ width: `${sections.length * 100}vw` }}>
-          {sections.map((content, index) => (
-            <div
-              key={index}
-              ref={(el) => { if (el) panelsRef.current[index] = el; }}
-              className="w-screen h-full flex items-center justify-center px-8"
-            >
-              {content}
-            </div>
-          ))}
-        </div>
-
-        {/* Navigation markers + animated SVG progress bar */}
-        <div className="absolute right-6 top-1/2 -translate-y-1/2 z-30 select-none">
-          <svg ref={rightSvgRef} viewBox="0 0 60 260" className="w-10 h-64 md:w-12 md:h-72">
-            <defs>
-              <linearGradient id="ppRightGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#f97316" />
-                <stop offset="100%" stopColor="#ef4444" />
-              </linearGradient>
-              <filter id="ppRightGlow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="3" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-            {/* Track - subtle S curve */}
-            <path d="M30,10 C15,60 45,100 30,150 C15,190 45,220 30,250" stroke="rgba(255,255,255,0.15)" strokeWidth="8" fill="none" strokeLinecap="round" />
-            {/* Progress path with glow */}
-            <path ref={rightPathRef} d="M30,10 C15,60 45,100 30,150 C15,190 45,220 30,250" stroke="url(#ppRightGrad)" strokeWidth="4" fill="none" strokeLinecap="round" filter="url(#ppRightGlow)" style={{ strokeDasharray: 0, strokeDashoffset: 0 }} />
-            {/* Moving orb */}
-            <circle ref={rightOrbRef} cx="-100" cy="-100" r="6" fill="url(#ppRightGrad)">
-              <animate attributeName="r" values="6;7;6" dur="1.2s" repeatCount="indefinite" />
-            </circle>
-            {/* Markers */}
-            {rightMarkerPoints.map((pt, idx) => (
-              <g key={idx} onClick={() => goToPanel(idx)} className="cursor-pointer">
-                <circle cx={pt.x} cy={pt.y} r={activeIndex === idx ? 5 : 4} fill={activeIndex === idx ? '#f97316' : '#6b7280'} stroke={activeIndex === idx ? '#fb923c' : '#4b5563'} strokeWidth={2} />
-                <title>{labels[idx]}</title>
-              </g>
+      {isHorizontal ? (
+        <div ref={containerRef} className="relative h-screen w-screen overflow-hidden">
+          <div className="flex h-full" style={{ width: `${sections.length * 100}vw` }}>
+            {sections.map((content, index) => (
+              <div
+                key={index}
+                ref={(el) => { if (el) panelsRef.current[index] = el; }}
+                className="w-screen h-full flex items-center justify-center px-8"
+              >
+                {content}
+              </div>
             ))}
-          </svg>
+          </div>
+
+          {/* Navigation markers + animated SVG progress bar */}
+          <div className="absolute right-6 top-1/2 -translate-y-1/2 z-30 select-none">
+            <svg ref={rightSvgRef} viewBox="0 0 60 260" className="w-10 h-64 md:w-12 md:h-72">
+              <defs>
+                <linearGradient id="ppRightGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#f97316" />
+                  <stop offset="100%" stopColor="#ef4444" />
+                </linearGradient>
+                <filter id="ppRightGlow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              {/* Track - subtle S curve */}
+              <path d="M30,10 C15,60 45,100 30,150 C15,190 45,220 30,250" stroke="rgba(255,255,255,0.15)" strokeWidth="8" fill="none" strokeLinecap="round" />
+              {/* Progress path with glow */}
+              <path ref={rightPathRef} d="M30,10 C15,60 45,100 30,150 C15,190 45,220 30,250" stroke="url(#ppRightGrad)" strokeWidth="4" fill="none" strokeLinecap="round" filter="url(#ppRightGlow)" style={{ strokeDasharray: 0, strokeDashoffset: 0 }} />
+              {/* Moving orb */}
+              <circle ref={rightOrbRef} cx="-100" cy="-100" r="6" fill="url(#ppRightGrad)">
+                <animate attributeName="r" values="6;7;6" dur="1.2s" repeatCount="indefinite" />
+              </circle>
+              {/* Markers */}
+              {rightMarkerPoints.map((pt, idx) => (
+                <g key={idx} onClick={() => goToPanel(idx)} className="cursor-pointer">
+                  <circle cx={pt.x} cy={pt.y} r={activeIndex === idx ? 5 : 4} fill={activeIndex === idx ? '#f97316' : '#6b7280'} stroke={activeIndex === idx ? '#fb923c' : '#4b5563'} strokeWidth={2} />
+                  <title>{labels[idx]}</title>
+                </g>
+              ))}
+            </svg>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="relative w-full py-12">
+          <div className="max-w-7xl mx-auto px-4 space-y-24">
+            {sections.map((content, index) => (
+              <div key={index} className="w-full">
+                {content}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 };
