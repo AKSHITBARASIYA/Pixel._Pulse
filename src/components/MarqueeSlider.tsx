@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { motion, useMotionValue, useAnimationFrame } from "framer-motion";
 
 // Import images using ES modules so bundler can optimize and ensure correct paths
 import logo1 from "../Assets/Logo-20250821T104544Z-1-001/Logo/Logo-1.jpg";
@@ -97,7 +97,7 @@ const BrandCard: React.FC<BrandCardProps> = ({ src, alt }) => {
         >
           {/* Enlarged Card Container */}
           <div
-            className="relative w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52 lg:w-60 lg:h-60 
+            className="relative w-28 h-28 sm:w-40 sm:h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 
                        bg-black/40 backdrop-blur-sm rounded-xl p-3 sm:p-4 
                        shadow-inner border border-gray-700/40 
                        flex items-center justify-center 
@@ -127,9 +127,61 @@ const BrandCard: React.FC<BrandCardProps> = ({ src, alt }) => {
 };
 
 const MarqueeSlider: React.FC = () => {
+  const isLargeScreen = useMemo(() => {
+    if (typeof window === 'undefined') return true;
+    return window.matchMedia('(min-width: 1024px)').matches; // lg and up
+  }, []);
+
+  const [isDesktop, setIsDesktop] = useState<boolean>(isLargeScreen);
+  const trackWrapperRef = useRef<HTMLDivElement | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const [segmentWidth, setSegmentWidth] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const x = useMotionValue(0);
+
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 1024px)');
+    const update = () => setIsDesktop(mql.matches);
+    update();
+    mql.addEventListener('change', update);
+    return () => mql.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    if (isDesktop) return;
+    const compute = () => {
+      const track = trackRef.current;
+      if (!track) return;
+      const width = track.scrollWidth / 2; // since we render duplicated items
+      setSegmentWidth(width);
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    window.addEventListener('orientationchange', compute);
+    return () => {
+      window.removeEventListener('resize', compute);
+      window.removeEventListener('orientationchange', compute);
+    };
+  }, [isDesktop]);
+
+  useAnimationFrame((_t, delta) => {
+    if (isDesktop) return;
+    if (isDragging) return;
+    if (segmentWidth <= 0) return;
+    const speedPxPerMs = 0.12; // tune speed
+    let nextX = x.get() - speedPxPerMs * delta;
+    // wrap within [-segmentWidth, 0]
+    if (nextX <= -segmentWidth) {
+      nextX += segmentWidth;
+    } else if (nextX > 0) {
+      nextX -= segmentWidth;
+    }
+    x.set(nextX);
+  });
+
   return (
     <section
-      className="w-full h-screen bg-black relative overflow-hidden flex flex-col justify-center"
+      className="w-full min-h-[60vh] lg:h-screen bg-black relative overflow-hidden flex flex-col justify-center"
     >
       {/* Enhanced Background aura */}
       <div className="absolute inset-0 bg-gradient-to-br from-gray-950 via-black to-gray-950"></div>
@@ -157,17 +209,37 @@ const MarqueeSlider: React.FC = () => {
           </p>
         </div>
 
-        {/* Smooth Infinite Marquee Full Width */}
-        <div className="relative w-full overflow-hidden">
-          <motion.div
-            className="flex gap-12 mt-4 md:mt-6"
-            animate={{ x: ["0%", "-50%"] }}
-            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-          >
-            {[...brands, ...brands].map((brand, i) => (
-              <BrandCard key={i} src={brand.src} alt={brand.alt} />
-            ))}
-          </motion.div>
+        {/* Smooth Marquee on desktop; draggable on mobile/tablet */}
+        <div ref={trackWrapperRef} className="relative w-full overflow-hidden">
+          {isDesktop ? (
+            <motion.div
+              className="flex gap-8 sm:gap-10 md:gap-12 mt-2 md:mt-6"
+              animate={{ x: ["0%", "-50%"] }}
+              transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            >
+              {[...brands, ...brands].map((brand, i) => (
+                <BrandCard key={i} src={brand.src} alt={brand.alt} />
+              ))}
+            </motion.div>
+          ) : (
+            <motion.div
+              ref={trackRef}
+              className="flex gap-6 sm:gap-8 md:gap-10 mt-2 cursor-grab active:cursor-grabbing"
+              style={{ x }}
+              drag="x"
+              dragElastic={0.04}
+              dragMomentum={true}
+              onDragStart={() => setIsDragging(true)}
+              onDragEnd={() => {
+                // allow momentum to settle briefly before resuming auto scroll
+                setTimeout(() => setIsDragging(false), 150);
+              }}
+            >
+              {[...brands, ...brands].map((brand, i) => (
+                <BrandCard key={i} src={brand.src} alt={brand.alt} />
+              ))}
+            </motion.div>
+          )}
         </div>
       </div>
     </section>
