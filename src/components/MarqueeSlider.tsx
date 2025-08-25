@@ -1,22 +1,34 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 
-const brands = [
-  "src/Assets/Logo-20250821T104544Z-1-001/Logo/Logo-1.jpg",
-  "src/Assets/Logo-20250821T104544Z-1-001/Logo/Logo-3.jpg",
-  "src/Assets/Logo-20250821T104544Z-1-001/Logo/Logo-2.jpg",
-  "src/Assets/Logo-20250821T104544Z-1-001/Logo/Logo-4.jpg",
-  "src/Assets/Logo-20250821T104544Z-1-001/Logo/Logo-5.jpg",
-  "src/Assets/Logo-20250821T104544Z-1-001/Logo/Logo-6.jpg",
-  "src/Assets/Logo-20250821T104544Z-1-001/Logo/Logo-7.jpg",
-  "src/Assets/Logo-20250821T104544Z-1-001/Logo/Logo-8.jpg",
-  "src/Assets/Logo-20250821T104544Z-1-001/Logo/Logo-9.jpg",
-  "src/Assets/Logo-20250821T104544Z-1-001/Logo/Logo-10.jpg",
+// Import images using ES modules so bundler can optimize and ensure correct paths
+import logo1 from "../Assets/Logo-20250821T104544Z-1-001/Logo/Logo-1.jpg";
+import logo2 from "../Assets/Logo-20250821T104544Z-1-001/Logo/Logo-2.jpg";
+import logo3 from "../Assets/Logo-20250821T104544Z-1-001/Logo/Logo-3.jpg";
+import logo4 from "../Assets/Logo-20250821T104544Z-1-001/Logo/Logo-4.jpg";
+import logo5 from "../Assets/Logo-20250821T104544Z-1-001/Logo/Logo-5.jpg";
+import logo6 from "../Assets/Logo-20250821T104544Z-1-001/Logo/Logo-6.jpg";
+import logo7 from "../Assets/Logo-20250821T104544Z-1-001/Logo/Logo-7.jpg";
+import logo8 from "../Assets/Logo-20250821T104544Z-1-001/Logo/Logo-8.jpg";
+import logo9 from "../Assets/Logo-20250821T104544Z-1-001/Logo/Logo-9.jpg";
+
+type Brand = { src: string; alt: string };
+
+const brands: Brand[] = [
+  { src: logo1, alt: "Client logo 1" },
+  { src: logo2, alt: "Client logo 2" },
+  { src: logo3, alt: "Client logo 3" },
+  { src: logo4, alt: "Client logo 4" },
+  { src: logo5, alt: "Client logo 5" },
+  { src: logo6, alt: "Client logo 6" },
+  { src: logo7, alt: "Client logo 7" },
+  { src: logo8, alt: "Client logo 8" },
+  { src: logo9, alt: "Client logo 9" },
 ];
 
-type BrandCardProps = { src: string };
+type BrandCardProps = { src: string; alt: string };
 
-const BrandCard: React.FC<BrandCardProps> = ({ src }) => {
+const BrandCard: React.FC<BrandCardProps> = ({ src, alt }) => {
   const [transformStyle, setTransformStyle] = useState<string>("rotateX(0deg) rotateY(0deg)");
   const [shineStyle, setShineStyle] = useState<React.CSSProperties>({ opacity: 0 });
   const [isHovering, setIsHovering] = useState(false);
@@ -80,7 +92,7 @@ const BrandCard: React.FC<BrandCardProps> = ({ src }) => {
                      backdrop-blur-md rounded-2xl p-10 
                      shadow-xl border border-orange-500/30 
                      transition-all duration-500 ease-out 
-                     hover:border-orange-500/70 
+                     hover:border-orange-500/70 group 
                      hover:shadow-[0_0_40px_12px_rgba(249,115,22,0.45)] hover:-translate-y-1 md:hover:-translate-y-2"
         >
           {/* Enlarged Card Container */}
@@ -97,7 +109,7 @@ const BrandCard: React.FC<BrandCardProps> = ({ src }) => {
               className="w-full h-full object-contain rounded-lg 
                          transition-transform duration-500 ease-out 
                          group-hover:scale-110"
-              alt="brand"
+              alt={alt}
               loading="lazy"
             />
           </div>
@@ -152,8 +164,8 @@ const MarqueeSlider: React.FC = () => {
             animate={{ x: ["0%", "-50%"] }}
             transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
           >
-            {[...brands, ...brands].map((src, i) => (
-              <BrandCard key={i} src={src} />
+            {[...brands, ...brands].map((brand, i) => (
+              <BrandCard key={i} src={brand.src} alt={brand.alt} />
             ))}
           </motion.div>
         </div>
